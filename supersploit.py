@@ -48,9 +48,16 @@ def internetdbsearch():
       verbose(f"|   [✔]   Scanning of '{i}' done")
   except TypeError:
     pass
-  verbose("---------------[   DONE WITH SCAN   ]---------------\n")
+  verbose("---------------[   DONE WITH SCAN   ]---------------\n\n\n")
   return data
 
+def makeseparator():
+  seperator = "========================================================="
+  verbose(seperator)
+  verbose("-----------------------> RESULTS <-----------------------")          
+  verbose(f"{seperator}\n\n")
+
+  
 def readtxtforurls():
   try:
     for i in tags["files"]:
@@ -122,5 +129,6 @@ if __name__ == "__main__":
   tags = readtxtforurls()
   tags = handledns()
   data = internetdbsearch()
+  makeseparator()
   parsedata()
   
