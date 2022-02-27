@@ -1,18 +1,49 @@
 import requests, time, sys, pyfiglet, json, socket
+from bs4 import BeautifulSoup
 
-tagsl = ["-i", "-v", "-b", "-m"]
-tags = {"-i":"", "-v":False, "-b":False, "ip":[], "hosts":[], "files":[]}
+tagsl = ["-i", "-v", "-b", "-m", "-u", "-a"]
+tags = {"-i":"", "-v":False, "-b":False, "ip":[], "hosts":[], "files":[], "-u":False}
 data = {}
 # https://internetdb.shodan.io/[ip]
  
 
+def help():
+  helpstr = """
+  Usage:
+  
+      python3 scan4vulns.py [arguments] [IPs/URLs/.txt]
+
+
+  Arguments:
+  
+    -h       ===>>     Displays this help message
+
+    -v       ===>>     Displays verbose messages (DNS & Scan points)
+
+    -b       ===>>     Most important: Display the banner :)
+
+    -m       ===>>     URLs are only registred with one '.', use -m to manually\n                       assign the following parameter the "url" tag
+
+    -u       ===>>     Displays the URLs for the found CVEs. Also displays the \n                       severity of found CVEs (!Warning! This will take a lot longer than usual)
+                       
+    -a       ===>>     Because I'm lazy, this tag applies -b, -v & -u in one argument
+  """
+  print(helpstr)
+
+
+
+
 # Gets supplied arguments by checking if arg is in
 # tagsl. If it is, assign the following value to arg in tags (dict)
 def getargs():
-  for i in sys.argv[1:]:
+  paraml = sys.argv[1:]
+  for i in paraml:
     if i in tagsl:
       if i == "-m":
         tags["hosts"].append(sys.argv[sys.argv.index(i)+1])
+      elif i == "-a":
+        for j in ["-v", "-b", "-u"]:
+          paraml.append(j)
       elif type(tags[i]) == type(str(tags["-i"])):
         tags[i] = sys.argv[sys.argv.index(i)+1]
       elif not tags[i]:
@@ -23,7 +54,7 @@ def getargs():
       tags["hosts"].append(i)
     elif i.count(".") == 1 and i not in tags["hosts"] and i[-3:] == "txt":
       tags["files"].append(i)
-    if "-" in i and i not in tagsl and len(i) <= 3:
+    if "-" in i and i not in tagsl and len(i) <= 2:
       print(f"[!] Flag '{i}' not recognized, skipping it")
   return tags
 
@@ -39,6 +70,7 @@ def banner():
     print(pyfiglet.figlet_format(">> SuperSploit <<"))
     print(">>   Kind of daft vuln searcher, but has its uses I guess  <<\n")
 
+# Searches the InternetDB for raw info on the target
 def internetdbsearch():
   verbose("---------------[    SCANNING IP    ]---------------")
   try:
@@ -57,7 +89,8 @@ def makeseparator():
   verbose("-----------------------> RESULTS <-----------------------")          
   verbose(f"{seperator}\n\n")
 
-  
+
+# Reads a given .txt file and appends all found URLs to hosts
 def readtxtforurls():
   try:
     for i in tags["files"]:
@@ -75,6 +108,7 @@ def readtxtforurls():
     pass
   return tags
 
+# Handles DNS to get scannable IPs for previously found URLs
 def handledns():
   verbose("---------------[    HANDLING DNS    ]---------------")
   try:
@@ -94,6 +128,7 @@ def handledns():
   verbose("\n")
   return tags
 
+# Takes found data and presents it nicely :)
 def parsedata():
   for i in data:
     i = data[i]
@@ -114,16 +149,34 @@ def parsedata():
     for b in i["ports"]:
       print(f"|   [p]   {b}")
     if i["vulns"]:
-      print("|\n|   >>   Vulns:")
+      print("|\n|   >>   Vulns:", end="")
       for b in i["vulns"]:
-        print(f"|   [v]   {b}")
+        if i["vulns"].index(b)+1 < 10:
+          print(f"\n|   [v{i['vulns'].index(b)+1}]   {b}", end="")
+        else:
+          print(f"\n|   [v{i['vulns'].index(b)+1}]  {b}", end="")
+        if tags["-u"]:
+          print(f"     -      {getseverity(b)}\n|   https://nvd.nist.gov/vuln/detail/{b}\n|", end="")
     else:
       print("|\n|   >>   No vulns found!")
-    print(f"{endstr}\n\n")
+    print(f"\n{endstr}\n\n")
+
+# If the -u parameter is supplied (or -a), prints out the severity
+def getseverity(cve):
+  try:
+    content = requests.get(f"https://nvd.nist.gov/vuln/detail/{cve}").text
+    soup = BeautifulSoup(content, features="html5lib")
+    severity = soup.find(id="Cvss3NistCalculatorAnchor").get_text()
+  except AttributeError:
+    return "No severity found..."
+  return severity
   
   
 # Starts everything up
 if __name__ == "__main__":
+  if "-h" in sys.argv:
+    help()
+    sys.exit()
   tags = getargs()
   banner()
   tags = readtxtforurls()
