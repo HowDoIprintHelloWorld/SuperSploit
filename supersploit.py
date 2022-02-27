@@ -67,7 +67,7 @@ def verbose(string):
 # Probably the most important part: Prints the Banner
 def banner():
   if tags["-b"] == True:
-    print(pyfiglet.figlet_format(">> SuperSploit <<"))
+    print(pyfiglet.figlet_format(">> Scan4Vulns <<"))
     print(">>   Kind of daft vuln searcher, but has its uses I guess  <<\n")
 
 # Searches the InternetDB for raw info on the target
