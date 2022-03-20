@@ -2,7 +2,7 @@
 
 <h1>Scan4Vulns - A nice visualization and interface for the InternetDB</h1>
 
-![Example image](images/?raw=true "Example")
+![Example image](images/IMG_0451.jpeg?raw=true "Example")
 
 Usage:
   
